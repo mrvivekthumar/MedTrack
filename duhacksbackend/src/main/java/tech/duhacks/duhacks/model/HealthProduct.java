@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Set;
 
 @Getter
@@ -22,6 +24,7 @@ public class HealthProduct {
     private String name;
     private Integer quantity;
     private LocalDate expiryDate;
+    private Integer lowQuantity;
     private Float amount;
 
     @ManyToOne(fetch = FetchType.EAGER)

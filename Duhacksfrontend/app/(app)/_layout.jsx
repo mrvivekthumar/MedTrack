@@ -23,25 +23,25 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="inventory"
+        name="AddMedicine"
         options={{
-          title: 'Inventory',
+          title: 'Add Medicine',
           tabBarIcon: ({ size, color }) => (
-            <Ionicons name="list" size={size} color={color} />
+            <Ionicons name="add-circle" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="reminders"
+        name="Orders"
         options={{
-          title: 'Reminders',
+          title: 'Orders',
           tabBarIcon: ({ size, color }) => (
-            <Ionicons name="notifications" size={size} color={color} />
+            <Ionicons name="cart" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="Profile"
         options={{
           title: 'Profile',
           tabBarIcon: ({ size, color }) => (

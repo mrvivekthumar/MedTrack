@@ -1,42 +1,59 @@
 package tech.duhacks.duhacks.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import tech.duhacks.duhacks.dto.HealthProductDto;
+import tech.duhacks.duhacks.exception.AuthException;
 import tech.duhacks.duhacks.model.HealthProduct;
+import tech.duhacks.duhacks.model.MedicationSchedule;
 import tech.duhacks.duhacks.repository.HealthProductRepo;
+import tech.duhacks.duhacks.repository.UserRepo;
+import tech.duhacks.duhacks.schedular.ExpiryEmail;
 
-import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-@AllArgsConstructor
 @Service
+@AllArgsConstructor
 public class HealthProductService {
 
+    private final HealthProductRepo healthProductRepo;
+    private final HealthProductMapper healthProductMapper;
+    private final ExpiryEmail expiryEmail;
+    private final UserRepo userRepo;
 
-    HealthProductRepo healthProductRepo;
+    public HealthProductDto add(HealthProductDto hrd){
+        var user = userRepo.findById(hrd.userId()).orElseThrow(() ->  new EntityNotFoundException("User Not Found") );
 
-    public HealthProduct addProduct(HealthProduct product){
-        return healthProductRepo.save(product);
+        var healthProduct  = HealthProduct.builder()
+                .name(hrd.name())
+                .amount(hrd.amount())
+                .quantity(hrd.quantity())
+                .expiryDate(hrd.expiryDate())
+                .user(user)
+                .build();
+
+        Set<MedicationSchedule> medicationSchedules = hrd.times().stream().map(time -> {
+            MedicationSchedule schedule = new MedicationSchedule();
+            schedule.setTime(time);
+            schedule.setHealthPorduct(healthProduct); // This will link the schedule to the health product
+            return schedule;
+        }).collect(Collectors.toSet());
+
+        healthProduct.setMedicationSchedules(medicationSchedules); // Associate the schedules with the health product
+        var hrqSave =  healthProductMapper.getHealthProductDto(healthProductRepo.save(healthProduct));
+
+        expiryEmail.addMedicine(healthProduct);
+
+        return  hrqSave;
     }
 
     public boolean deleteProduct(Long id){
         healthProductRepo.deleteById(id);
-        var existingProduct = healthProductRepo.findById(id).orElse(null);
-        if(existingProduct == null){
-            return true;
-        }
-        return false;
+        healthProductRepo.findById(id).orElseThrow(() -> new AuthException("Failed to delete Product"));
+        expiryEmail.removeMedicine(id);
+        return true;
     }
 
-
-    public HealthProduct reorderProduct(Long productId, int additionalQuantity) {
-        Optional<HealthProduct> optionalProduct = healthProductRepo.findById(productId);
-        if (optionalProduct.isPresent()) {
-            HealthProduct product = optionalProduct.get();
-            // Increase the product's quantity by the additional quantity provided
-            product.setQuantity(product.getQuantity() + additionalQuantity);
-            return healthProductRepo.save(product);
-        } else {
-            throw new RuntimeException("Product not found with ID: " + productId);
-        }
-    }
 }
